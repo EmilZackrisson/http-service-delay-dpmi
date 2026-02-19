@@ -22,8 +22,8 @@ parser = argparse.ArgumentParser(
 )
 
 parser.add_argument("filename")
-parser.add_argument("-p", "--port", default=8001)
-parser.add_argument("-o", "--outfile")
+parser.add_argument("-p", "--port", default=8001, help="HTTP Port to filter for")
+parser.add_argument("-o", "--outfile", help="filename for writing results as CSV")
 parser.add_argument("-v", "--verbose", action='store_true')
 
 debug = False
