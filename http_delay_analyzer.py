@@ -77,6 +77,29 @@ def extract_timestamp(header_line: str) -> Optional[Decimal]:
             return None
     return None
 
+def extract_linksize(header_line:str) -> Optional[int]:
+    """
+    Extract link size from packet header line.
+    Format: [packet_num]:direction:mp_id:TIMESTAMP:LINK...
+    
+    Args:
+        header_line: The packet header line
+    
+    Returns:
+        size as Integer, or None if not found
+    """
+
+    parts = header_line.split(":")
+    if len(parts) >= 5:
+        try:
+            linksizepart = parts[4]
+            linksizepart = linksizepart.lstrip("LINK(")
+            linksizepart = linksizepart.rstrip(")")
+            return int(linksizepart)
+        except (ValueError):
+            return None
+    return None
+
 
 def parse_http_headers(hex_lines: List[str]) -> Dict[str, str]:
     """
@@ -142,6 +165,7 @@ def parse_capshow_output(output: str) -> Tuple[List[Dict], List[Dict]]:
         if line.startswith('[') and ']:' in line:
             header_line = line
             timestamp = extract_timestamp(header_line)
+            size = extract_linksize(header_line)
 
             debug_log(f"Found header line with timestamp: {timestamp}")
             
@@ -163,6 +187,7 @@ def parse_capshow_output(output: str) -> Tuple[List[Dict], List[Dict]]:
                     requests.append({
                         'timestamp': timestamp,
                         'headers': headers,
+                        'size': size,
                         'raw_header': header_line
                     })
             elif 'HTTP/1.1' in ascii_combined:
@@ -226,7 +251,8 @@ def match_request_response(requests: List[Dict], responses: List[Dict]) -> List[
                         'counter': request['headers'].get('counter', 'N/A'),
                         'request_time': request['timestamp'],
                         'response_time': response['timestamp'],
-                        'delay': delay
+                        'delay': delay,
+                        'size': request['size']
                     })
                     # Remove this response so it's not matched again
                     response_map[key].remove(response)
@@ -238,10 +264,10 @@ def export_to_csv(file_name: str, matches: List[Dict]):
     with open(file_name, "w", newline='') as csvfile:
         writer = csv.writer(csvfile, delimiter=',')
 
-        writer.writerow(["Experiment ID", "Key ID", "Run ID", "Counter", "Request Time", "Response Time", "Delay (s)"])
+        writer.writerow(["Experiment ID", "Key ID", "Run ID", "Counter", "Request Time", "Response Time", "Delay (s)", "Size"])
 
         for match in matches:
-            writer.writerow([match['exp_id'], match['key_id'], match['run_id'], match['counter'], match['request_time'], match['response_time'], match['delay']])
+            writer.writerow([match['exp_id'], match['key_id'], match['run_id'], match['counter'], match['request_time'], match['response_time'], match['delay'], match['size']])
 
 
 def main():
@@ -282,13 +308,13 @@ def main():
         return
     
     # Display results
-    print(f"{'Exp ID':<10} {'Key ID':<15} {'Run ID':<8} {'Counter':<8} {'Request Time':<18} {'Response Time':<18} {'Delay (s)':<12}")
+    print(f"{'Exp ID':<10} {'Key ID':<15} {'Run ID':<8} {'Counter':<8} {'Request Time':<18} {'Response Time':<18} {'Delay (s)':<20} {'Size' :<5}")
     print("-" * 115)
     
     total_delay = Decimal(0)
     for match in matches:
         print(f"{match['exp_id']:<10} {match['key_id']:<15} {match['run_id']:<8} {match['counter']:<8} "
-              f"{match['request_time']:<18} {match['response_time']:<18} {match['delay']:<20}")
+              f"{match['request_time']:<18} {match['response_time']:<18} {match['delay']:<20} {match['size']:<5}")
         total_delay += match['delay']
     
     print("-" * 115)
