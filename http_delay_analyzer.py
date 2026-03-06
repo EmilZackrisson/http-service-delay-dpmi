@@ -272,10 +272,6 @@ def export_to_csv(file_name: str, matches: List[Dict]):
 
 def main():
     """Main entry point."""
-    # if len(sys.argv) < 2:
-    #     print("Usage: python http_delay_analyzer.py <cap_file> [port]", file=sys.stderr)
-    #     print("Example: python http_delay_analyzer.py trace-40588-1.cap 8001", file=sys.stderr)
-    #     sys.exit(1)
 
     args = parser.parse_args()
     
